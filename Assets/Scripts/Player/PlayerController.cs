@@ -1,11 +1,11 @@
-﻿using System;
+﻿using Cinemachine;
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
     [Header("Player Attributes")]
     [SerializeField] private float speed = 1f;
-    [SerializeField] public static bool sprinting;
+    [SerializeField] private bool sprinting;
     [SerializeField] private float sprintMultiplier = 1.5f;
     [SerializeField] private bool canMove = true;
     [SerializeField] private bool isGrounded;
@@ -14,17 +14,27 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float lowJumpMultiplier = 2f;
 
     [Header("Unity Components")]
-    [SerializeField] private Rigidbody playerRb;
-    [SerializeField] private Transform playerCamera;
+    [SerializeField] private CinemachineVirtualCamera playerCamera;
+    private Rigidbody playerRb;
+    private PlayerStats playerStats;
+
+    private void Awake()
+    {
+        playerStats = gameObject.GetComponent<PlayerStats>();
+        playerRb = gameObject.GetComponent<Rigidbody>();
+    }
 
     private void Update()
     {
         SprintCheck();
+        SprintCamera();
+    }
+
+    private void FixedUpdate()
+    {
         InitMovement();
         Jump();
     }
-
-
 
 
     #region Jump
@@ -35,7 +45,7 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKey(KeyCode.Space))
         {
-            playerRb.velocity = (Quaternion.Euler(0, playerCamera.eulerAngles.y,0) * new Vector3(0,1,1)) * jumpForce;
+            playerRb.velocity += Vector3.up * jumpForce;
         }
 
         if (playerRb.velocity.y < 0)
@@ -58,11 +68,25 @@ public class PlayerController : MonoBehaviour
     }
     #endregion
 
+    #region Sprint
+    private void SprintCheck()
+    {
+        sprinting = false;
+        if (Input.GetKey(KeyCode.LeftShift))
+            sprinting = true;
+    }
+    private void SprintCamera()
+    {
+        if (sprinting)
+            playerCamera.m_Lens.FieldOfView = 80;
+        else
+            playerCamera.m_Lens.FieldOfView = 70;
+    }
+    #endregion
+
     private void InitMovement()
     {
         if (!canMove)
-            return;
-        if (!isGrounded)
             return;
 
         MoveForward();
@@ -72,20 +96,15 @@ public class PlayerController : MonoBehaviour
     }
 
     #region movement
-    private void SprintCheck()
-    {
-        sprinting = false;
-        if (Input.GetKey(KeyCode.LeftShift))
-            sprinting = true;
-    }
     private void Move(Vector3 direction)
     {
-        //playerRb.transform.Translate((direction * Time.deltaTime * speed));
-        playerRb.MovePosition(this.transform.position += direction * Time.deltaTime * speed); 
+        if (!isGrounded)
+            direction = direction / 2;
+        playerRb.MovePosition(this.transform.position + (direction * Time.deltaTime * speed)); 
     }
     private Vector3 CalDirection(Vector3 moveDirection)
     {
-        var cameraDirection = playerCamera.eulerAngles.y;
+        var cameraDirection = playerCamera.transform.eulerAngles.y;
         var finalMoveDirection = Quaternion.Euler(0, cameraDirection, 0) * moveDirection;
         return finalMoveDirection;
     }
