@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
     {
         SprintCheck();
         SprintCamera();
+        
     }
 
     private void FixedUpdate()
@@ -35,7 +36,6 @@ public class PlayerController : MonoBehaviour
         InitMovement();
         Jump();
     }
-
 
     #region Jump
     private void Jump()
